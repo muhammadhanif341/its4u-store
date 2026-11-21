@@ -13,9 +13,12 @@ export function fitWithin(width: number, height: number, max: number = MAX_IMAGE
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
-/** Photos go to Vercel Blob when a token is set (production), and to the local disk otherwise. */
+/**
+ * Photos go to Vercel Blob in production and to the local disk on your computer. A Blob store connected
+ * in Vercel sets either a token (BLOB_READ_WRITE_TOKEN) or, for newer stores, just BLOB_STORE_ID.
+ */
 export function usesBlobStorage(env: Record<string, string | undefined> = process.env): boolean {
-  return Boolean(env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(env.BLOB_READ_WRITE_TOKEN || env.BLOB_STORE_ID);
 }
 
 export type ImageType = { ext: "jpg" | "png" | "webp"; mime: string };

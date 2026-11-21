@@ -55,6 +55,7 @@ test("photos use Vercel Blob only when a token is set", () => {
   assert.equal(usesBlobStorage({}), false);
   assert.equal(usesBlobStorage({ BLOB_READ_WRITE_TOKEN: "" }), false);
   assert.equal(usesBlobStorage({ BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_x" }), true);
+  assert.equal(usesBlobStorage({ BLOB_STORE_ID: "store_abc" }), true, "newer stores only set the store id");
 });
 
 test("upload limit stays under Vercel's 4.5 MB request cap", () => {
