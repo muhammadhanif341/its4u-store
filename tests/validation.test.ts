@@ -56,8 +56,8 @@ test("parseFilters ignores junk and clamps values", () => {
   });
   assert.equal(f.q, "iphone");
   assert.equal(f.type, "");
-  assert.equal(f.condition, "");
-  assert.equal(f.pta, "jv");
+  assert.deepEqual(f.condition, []);
+  assert.deepEqual(f.pta, ["jv"]);
   assert.equal(f.minPrice, null);
   assert.equal(f.maxPrice, 100000);
   assert.equal(f.sort, "price-desc");
@@ -65,7 +65,7 @@ test("parseFilters ignores junk and clamps values", () => {
 
 test("parseFilters defaults and array params", () => {
   const f = parseFilters({ brand: ["Samsung", "Apple"] });
-  assert.equal(f.brand, "Samsung");
+  assert.deepEqual(f.brand, ["Samsung", "Apple"], "repeated keys are all kept");
   assert.equal(f.sort, "newest");
 });
 
@@ -80,7 +80,7 @@ test("buildWhere combines filters", () => {
     AND: [
       { active: true },
       { condition: { not: "new" } },
-      { ptaStatus: "pta" },
+      { ptaStatus: { in: ["pta"] } },
       { price: { gte: 10000 } },
       { price: { lte: 50000 } },
     ],

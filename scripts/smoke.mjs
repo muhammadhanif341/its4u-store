@@ -381,5 +381,19 @@ await check("product page is laid out like a record with side bars and a 3D view
   assert.equal(count(r.text, / id="buy"/g), 1);
 });
 
+await check("shop filters can pick several values in one group", async () => {
+  const one = await get("/shop?brand=Apple");
+  const two = await get("/shop?brand=Apple&brand=Samsung");
+  const n = (r) => Number(r.text.match(/data-testid="result-count"[^>]*>(\d+) phones? found/)[1]);
+  assert.ok(n(two) > n(one), "Apple and Samsung together show more than Apple alone");
+  assert.match(two.text, /<h1[^>]*>Apple or Samsung phones<\/h1>/);
+  assert.match(two.text, /rel="canonical" href="[^"]+\/shop"/, "a mix points to the main shop page");
+  assert.match(two.text, /name="robots" content="noindex/);
+  assert.match(one.text, /name="robots" content="index/);
+  const mixed = await get("/shop?pta=pta&pta=jv&brand=Apple");
+  assert.equal(mixed.status, 200);
+  assert.ok(count(two.text, /data-kind="checkbox"/g) > 0, "checkbox options");
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

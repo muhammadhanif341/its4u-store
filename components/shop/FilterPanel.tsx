@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CONDITIONS, PTA_STATUSES } from "@/lib/constants";
-import type { ProductFilters } from "@/lib/products-query";
+import { toggleIn, type FilterOverride, type ProductFilters } from "@/lib/products-query";
 import { BUDGETS } from "@/lib/storefront";
 import { Icon } from "../Icons";
 
@@ -14,9 +14,9 @@ export type Facets = {
   storages: { value: string; count: number }[];
 };
 
-type Over = Partial<Record<keyof ProductFilters, string>>;
+type Over = FilterOverride;
 
-function Option({ href, active, label, count }: { href: string; active: boolean; label: string; count?: number }) {
+function Option({ href, active, label, count, multi = false }: { href: string; active: boolean; label: string; count?: number; multi?: boolean }) {
   return (
     <Link
       href={href}
@@ -28,11 +28,12 @@ function Option({ href, active, label, count }: { href: string; active: boolean;
       <span className="flex min-w-0 items-center gap-2.5">
         <span
           aria-hidden="true"
-          className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 transition ${
+          data-kind={multi ? "checkbox" : "radio"}
+          className={`grid h-4 w-4 shrink-0 place-items-center border-2 transition ${multi ? "rounded-[5px]" : "rounded-full"} ${
             active ? "border-brand-600 bg-brand-600" : "border-[#94A3B8] group-hover:border-brand-500"
           }`}
         >
-          {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+          {active && (multi ? <Icon name="check" className="h-3 w-3 text-white" strokeWidth={3.4} /> : <span className="h-1.5 w-1.5 rounded-full bg-white" />)}
         </span>
         <span className="truncate">{label}</span>
       </span>
@@ -41,10 +42,13 @@ function Option({ href, active, label, count }: { href: string; active: boolean;
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div role="group" aria-label={title} className="border-t border-line pt-4 first:border-t-0 first:pt-0">
-      <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">{title}</p>
+      <p className="mb-2 flex items-baseline justify-between gap-2 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+        {title}
+        {hint && <span className="text-[11px] font-medium normal-case tracking-normal">{hint}</span>}
+      </p>
       <div className="space-y-0.5">{children}</div>
     </div>
   );
@@ -52,24 +56,29 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 
 /** Hidden inputs so a search or price form keeps the filters that are already chosen. */
 function Keep({ filters, skip }: { filters: ProductFilters; skip: (keyof ProductFilters)[] }) {
-  const entries: [keyof ProductFilters, string][] = [
+  const single: [keyof ProductFilters, string][] = [
     ["q", filters.q],
     ["type", filters.type],
-    ["brand", filters.brand],
-    ["condition", filters.condition],
-    ["pta", filters.pta],
-    ["storage", filters.storage],
     ["minPrice", filters.minPrice ? String(filters.minPrice) : ""],
     ["maxPrice", filters.maxPrice ? String(filters.maxPrice) : ""],
     ["sort", filters.sort === "newest" ? "" : filters.sort],
   ];
+  const lists: [keyof ProductFilters, string[]][] = [
+    ["brand", filters.brand],
+    ["condition", filters.condition],
+    ["pta", filters.pta],
+    ["storage", filters.storage],
+  ];
   return (
     <>
-      {entries
+      {single
         .filter(([k, v]) => v && !skip.includes(k))
         .map(([k, v]) => (
           <input key={k} type="hidden" name={k} value={v} />
         ))}
+      {lists
+        .filter(([k]) => !skip.includes(k))
+        .flatMap(([k, values]) => values.map((v) => <input key={`${k}-${v}`} type="hidden" name={k} value={v} />))}
     </>
   );
 }
@@ -127,38 +136,38 @@ export function FilterPanel({
         <Option href={href({ type: "used" })} active={filters.type === "used"} label="Used" count={facets.usedCount} />
       </Group>
 
-      <Group title="PTA status">
-        <Option href={href({ pta: "" })} active={!filters.pta} label="Any status" />
+      <Group title="PTA status" hint="Pick any">
+        <Option href={href({ pta: [] })} active={filters.pta.length === 0} label="Any status" />
         {PTA_STATUSES.map((p) => (
-          <Option key={p.value} href={href({ pta: p.value })} active={filters.pta === p.value} label={p.label} count={facets.pta[p.value] ?? 0} />
+          <Option key={p.value} multi href={href({ pta: toggleIn(filters.pta, p.value) })} active={filters.pta.includes(p.value)} label={p.label} count={facets.pta[p.value] ?? 0} />
         ))}
       </Group>
 
       {facets.brands.length > 0 && (
-        <Group title="Brand">
-          <Option href={href({ brand: "" })} active={!filters.brand} label="All brands" />
+        <Group title="Brand" hint="Pick any">
+          <Option href={href({ brand: [] })} active={filters.brand.length === 0} label="All brands" />
           {facets.brands.map((b) => (
-            <Option key={b.value} href={href({ brand: b.value })} active={filters.brand === b.value} label={b.value} count={b.count} />
+            <Option key={b.value} multi href={href({ brand: toggleIn(filters.brand, b.value) })} active={filters.brand.includes(b.value)} label={b.value} count={b.count} />
           ))}
         </Group>
       )}
 
-      <Group title="Condition">
-        <Option href={href({ condition: "" })} active={!filters.condition} label="Any condition" />
+      <Group title="Condition" hint="Pick any">
+        <Option href={href({ condition: [] })} active={filters.condition.length === 0} label="Any condition" />
         {CONDITIONS.map((c) => (
-          <Option key={c.value} href={href({ condition: c.value })} active={filters.condition === c.value} label={c.label} count={facets.conditions[c.value] ?? 0} />
+          <Option key={c.value} multi href={href({ condition: toggleIn(filters.condition, c.value) })} active={filters.condition.includes(c.value)} label={c.label} count={facets.conditions[c.value] ?? 0} />
         ))}
       </Group>
 
       {facets.storages.length > 0 && (
-        <Group title="Storage">
+        <Group title="Storage" hint="Pick any">
           <div className="flex flex-wrap gap-2 px-1 pt-1">
             {facets.storages.map((s) => {
-              const active = filters.storage === s.value;
+              const active = filters.storage.includes(s.value);
               return (
                 <Link
                   key={s.value}
-                  href={href({ storage: active ? "" : s.value })}
+                  href={href({ storage: toggleIn(filters.storage, s.value) })}
                   aria-current={active ? "true" : undefined}
                   className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition ${
                     active ? "border-ink-900 bg-ink-900 text-white" : "border-line bg-white text-body hover:border-brand-300 hover:text-brand-700"

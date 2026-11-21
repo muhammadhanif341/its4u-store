@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { SORT_OPTIONS, conditionLabel, ptaLabel } from "@/lib/constants";
-import { buildOrderBy, buildWhere, filtersToQuery, parseFilters, type ProductFilters } from "@/lib/products-query";
+import { buildOrderBy, buildWhere, filtersToQuery, parseFilters, type FilterOverride, type ProductFilters } from "@/lib/products-query";
 import { shopCanonicalPath, shopDescription, shopIsIndexable, shopTitle } from "@/lib/shop-seo";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { formatPrice } from "@/lib/format";
@@ -28,13 +28,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 function activeChips(f: ProductFilters) {
-  const chips: { label: string; clear: Partial<Record<keyof ProductFilters, string>> }[] = [];
+  const chips: { label: string; clear: FilterOverride }[] = [];
   if (f.q) chips.push({ label: `Search: ${f.q}`, clear: { q: "" } });
   if (f.type) chips.push({ label: f.type === "new" ? "New" : "Used", clear: { type: "" } });
-  if (f.brand) chips.push({ label: f.brand, clear: { brand: "" } });
-  if (f.condition) chips.push({ label: conditionLabel(f.condition), clear: { condition: "" } });
-  if (f.pta) chips.push({ label: ptaLabel(f.pta), clear: { pta: "" } });
-  if (f.storage) chips.push({ label: f.storage, clear: { storage: "" } });
+  for (const b of f.brand) chips.push({ label: b, clear: { brand: f.brand.filter((x) => x !== b) } });
+  for (const c of f.condition) chips.push({ label: conditionLabel(c), clear: { condition: f.condition.filter((x) => x !== c) } });
+  for (const p of f.pta) chips.push({ label: ptaLabel(p), clear: { pta: f.pta.filter((x) => x !== p) } });
+  for (const st of f.storage) chips.push({ label: st, clear: { storage: f.storage.filter((x) => x !== st) } });
   if (f.minPrice) chips.push({ label: `From ${formatPrice(f.minPrice)}`, clear: { minPrice: "" } });
   if (f.maxPrice) chips.push({ label: `Up to ${formatPrice(f.maxPrice)}`, clear: { maxPrice: "" } });
   return chips;
@@ -46,7 +46,7 @@ export default async function ShopPage({ searchParams }: Props) {
   const view: "grid" | "list" = (Array.isArray(sp.view) ? sp.view[0] : sp.view) === "list" ? "list" : "grid";
 
   /** A link to the shop with some filters changed. The chosen view (cards or rows) is kept. */
-  const href = (over: Partial<Record<keyof ProductFilters, string>>, v: "grid" | "list" = view) => {
+  const href = (over: FilterOverride, v: "grid" | "list" = view) => {
     const base = filtersToQuery(filters, over);
     if (v !== "list") return `/shop${base}`;
     return `/shop${base ? `${base}&view=list` : "?view=list"}`;

@@ -43,7 +43,7 @@ test("every shop link in the footer really filters the shop, and goes to a real 
     const query = Object.fromEntries(new URLSearchParams(link.href.split("?")[1] ?? ""));
     const f = parseFilters(query);
     if (link.href !== "/shop") {
-      assert.ok(f.type || f.pta || f.condition || f.brand, `${link.href} does not apply any filter`);
+      assert.ok(f.type || f.pta.length || f.condition.length || f.brand.length, `${link.href} does not apply any filter`);
     }
   }
   for (const link of HELP_LINKS) assert.ok(["/how-to-buy", "/track", "/policies"].includes(link.href));

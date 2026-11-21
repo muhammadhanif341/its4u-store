@@ -162,12 +162,12 @@ test("pill nav menus all point at real shop filters", () => {
       assert.ok(item.href.startsWith("/shop"), item.href);
       if (item.href !== "/shop") {
         const f = parseFilters(Object.fromEntries(new URLSearchParams(item.href.split("?")[1])));
-        assert.ok(f.type || f.pta || f.brand || f.minPrice || f.maxPrice, `${item.href} applies no filter`);
+        assert.ok(f.type || f.pta.length || f.brand.length || f.minPrice || f.maxPrice, `${item.href} applies no filter`);
       }
     }
   }
   const brand = menus.find((m) => m.id === "brands")!.items[1];
-  assert.equal(parseFilters(Object.fromEntries(new URLSearchParams(brand.href.split("?")[1]))).brand, "Samsung & Co");
+  assert.deepEqual(parseFilters(Object.fromEntries(new URLSearchParams(brand.href.split("?")[1]))).brand, ["Samsung & Co"]);
   assert.deepEqual(buildMenus([]).map((m) => m.id), ["shop", "pta", "budget"]);
 });
 
@@ -186,12 +186,12 @@ test("pill nav is a labelled navigation with menu buttons that say whether they 
 
 // ---------- shop ----------
 test("filter sidebar lists type, PTA, brand, condition, storage and price, each with counts and a clear state", () => {
-  const f = parseFilters({ pta: "pta", brand: "Apple" });
-  const href = (over: Record<string, string>) => `/shop?x=${JSON.stringify(over)}`;
+  const f = parseFilters({ pta: "pta", brand: ["Apple", "Samsung"] });
+  const href = (over: Record<string, string | string[]>) => `/shop?x=${JSON.stringify(over)}`;
   const out = html(createElement(FilterPanel, { filters: f, facets, href, idPrefix: "d", activeCount: 2 }));
   for (const title of ["Type", "PTA status", "Brand", "Condition", "Storage", "Price"]) assert.ok(out.includes(`aria-label="${title}"`), title);
   // one chosen option in every group: All phones, PTA Approved, Apple, Any condition, Any price
-  assert.equal(count(out, /aria-current="true"/g), 5);
+  assert.equal(count(out, /aria-current="true"/g), 6, "PTA Approved, Apple, Samsung, plus All phones, Any condition and Any price");
   assert.match(out, /Clear all \(2\)/);
   assert.match(out, />Apple</);
   assert.match(out, />4</, "brand count");
@@ -201,6 +201,7 @@ test("filter sidebar lists type, PTA, brand, condition, storage and price, each 
   // the search form keeps the other filters
   assert.match(out, /<input type="hidden" name="pta" value="pta"\/>/);
   assert.match(out, /<input type="hidden" name="brand" value="Apple"\/>/);
+  assert.match(out, /<input type="hidden" name="brand" value="Samsung"\/>/, "every chosen brand is kept");
   for (const c of CONDITIONS) assert.ok(out.includes(c.label), c.label);
   const clean = html(createElement(FilterPanel, { filters: parseFilters({}), facets, href, idPrefix: "m", activeCount: 0 }));
   assert.doesNotMatch(clean, /Clear all/);
