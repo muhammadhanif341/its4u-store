@@ -5,9 +5,12 @@ import { getSettings } from "@/lib/settings";
 import { CONDITIONS, PTA_STATUSES } from "@/lib/constants";
 import { CONDITION_SCORE, CONDITION_TEXT, PTA_TEXT } from "@/lib/content";
 import { formatPrice, whatsappUrl } from "@/lib/format";
-import { storeJsonLd, websiteJsonLd } from "@/lib/seo";
+import { faqJsonLd, storeJsonLd, websiteJsonLd } from "@/lib/seo";
+import { BUDGETS, budgetHref, buildFaqs } from "@/lib/storefront";
 import { CONDITION_TONE, PTA_TONE, toneFor } from "@/lib/ui";
+import { Faq } from "@/components/Faq";
 import { HeroArt } from "@/components/HeroArt";
+import { HowToBuy } from "@/components/HowToBuy";
 import { Icon, type IconName } from "@/components/Icons";
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
@@ -23,7 +26,7 @@ const TRUST: { icon: IconName; title: string; text: string }[] = [
 ];
 
 export default async function HomePage() {
-  const [settings, featured, latest, total, brandRows, cheapest, nNew, nUsed, nPta, nNonPta, nJv] = await Promise.all([
+  const [settings, featured, latest, total, brandRows, cheapest, nNew, nUsed, nPta, nNonPta, nJv, brandCounts, dealRows] = await Promise.all([
     getSettings(db),
     db.product.findMany({ where: { active: true, featured: true }, orderBy: { createdAt: "desc" }, take: 4 }),
     db.product.findMany({ where: { active: true }, orderBy: { createdAt: "desc" }, take: 8 }),
@@ -35,7 +38,12 @@ export default async function HomePage() {
     db.product.count({ where: { active: true, ptaStatus: "pta" } }),
     db.product.count({ where: { active: true, ptaStatus: "non-pta" } }),
     db.product.count({ where: { active: true, ptaStatus: "jv" } }),
+    db.product.groupBy({ by: ["brand"], where: { active: true }, _count: { _all: true }, orderBy: { brand: "asc" } }),
+    db.product.findMany({ where: { active: true, stock: { gt: 0 }, oldPrice: { not: null } }, orderBy: { createdAt: "desc" }, take: 12 }),
   ]);
+
+  const deals = dealRows.filter((p) => p.oldPrice !== null && p.oldPrice > p.price).slice(0, 4);
+  const faqs = buildFaqs(settings).slice(0, 6);
 
   const categories: { href: string; title: string; text: string; icon: IconName; count: number }[] = [
     { href: "/shop?type=new", title: "New phones", text: "Box packed, with warranty", icon: "box", count: nNew },
@@ -55,6 +63,7 @@ export default async function HomePage() {
     <>
       <JsonLd data={storeJsonLd(settings)} />
       <JsonLd data={websiteJsonLd(settings.shopName)} />
+      <JsonLd data={faqJsonLd(faqs)} />
 
       {/* Hero */}
       <section className="hero-mesh relative isolate overflow-hidden" aria-labelledby="hero-title">
@@ -118,6 +127,69 @@ export default async function HomePage() {
           ))}
         </ul>
       </section>
+
+      {brandCounts.length > 0 && (
+        <section className="container-x pt-20" aria-labelledby="brands-title">
+          <SectionHeading eyebrow="Top brands" title="Shop by brand" />
+          <h3 id="brands-title" className="sr-only">Brands</h3>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {brandCounts.map((b) => (
+              <li key={b.brand}>
+                <Link
+                  href={`/shop?brand=${encodeURIComponent(b.brand)}`}
+                  className="group card flex items-center gap-3 p-4 transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift"
+                >
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink-900 font-display text-lg font-bold text-white transition group-hover:bg-brand-700" aria-hidden="true">
+                    {b.brand.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-ink-900">{b.brand}</span>
+                    <span className="text-sm text-muted">
+                      {b._count._all} {b._count._all === 1 ? "phone" : "phones"}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="container-x pt-20" aria-labelledby="budget-title">
+        <SectionHeading eyebrow="Shop by budget" title="What can you spend?" text="Pick a price range and see every phone in it." />
+        <h3 id="budget-title" className="sr-only">Price ranges</h3>
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {BUDGETS.map((b, i) => (
+            <li key={b.label}>
+              <Link
+                href={budgetHref(b)}
+                className={`group flex h-full flex-col justify-between rounded-2xl p-5 text-white transition duration-300 hover:-translate-y-1 hover:shadow-lift sm:p-6 ${
+                  i % 2 === 0 ? "bg-ink-900" : "bg-gradient-to-br from-brand-600 to-brand-800"
+                }`}
+              >
+                <span className="text-sm font-semibold text-accent-300">{b.hint}</span>
+                <span className="mt-6 block font-display text-xl font-bold leading-snug sm:text-2xl">{b.label}</span>
+                <span className="mt-4 flex items-center gap-1.5 text-sm font-semibold">
+                  See phones
+                  <Icon name="arrow" className="h-4 w-4 transition group-hover:translate-x-1" />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {deals.length > 0 && (
+        <section className="container-x pt-20" aria-labelledby="deals-title">
+          <SectionHeading eyebrow="Price drops" title="Deals right now" text="These phones are cheaper than their earlier price." href="/shop" />
+          <h3 id="deals-title" className="sr-only">Phones on offer</h3>
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            {deals.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {featured.length > 0 && (
         <section className="container-x pt-20" aria-labelledby="featured-title">
@@ -197,6 +269,13 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* How to buy */}
+      <section className="container-x pt-20" aria-labelledby="how-title">
+        <SectionHeading eyebrow="Easy ordering" title="How to buy in 4 steps" text="From choosing a phone to holding it in your hand." href="/how-to-buy" hrefLabel="Full guide" />
+        <h3 id="how-title" className="sr-only">How to buy</h3>
+        <HowToBuy />
+      </section>
+
       {/* Why us */}
       <section className="container-x pt-20" aria-labelledby="why-title">
         <SectionHeading eyebrow="Why shop with us" title="Buying a phone should feel safe" />
@@ -212,6 +291,13 @@ export default async function HomePage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Questions */}
+      <section className="container-x pt-20" aria-labelledby="faq-title">
+        <SectionHeading eyebrow="Questions" title="Good to know before you order" href="/how-to-buy" hrefLabel="More answers" />
+        <h3 id="faq-title" className="sr-only">Frequently asked questions</h3>
+        <Faq items={faqs} />
       </section>
 
       {/* WhatsApp band */}

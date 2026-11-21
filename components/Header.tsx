@@ -11,6 +11,7 @@ const NAV = [
   { href: "/shop?pta=pta", label: "PTA Approved" },
   { href: "/shop?pta=non-pta", label: "Non-PTA" },
   { href: "/shop?pta=jv", label: "JV" },
+  { href: "/how-to-buy", label: "How to buy" },
   { href: "/track", label: "Track order" },
 ];
 

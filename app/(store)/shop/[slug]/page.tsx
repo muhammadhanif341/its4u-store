@@ -13,6 +13,8 @@ import { Gallery } from "@/components/Gallery";
 import { Icon, type IconName } from "@/components/Icons";
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
+import { StickyBuyBar } from "@/components/StickyBuyBar";
+import { toInt } from "@/lib/pricing";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -53,6 +55,22 @@ export default async function ProductPage({ params }: Props) {
     }),
   ]);
 
+  const similar =
+    related.length >= 4
+      ? []
+      : await db.product.findMany({
+          where: {
+            active: true,
+            NOT: { id: { in: [product.id, ...related.map((r) => r.id)] } },
+            price: { gte: Math.round(product.price * 0.6), lte: Math.round(product.price * 1.4) },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 4 - related.length,
+        });
+  const more = [...related, ...similar];
+  const fee = toInt(settings.deliveryFee);
+  const freeAbove = toInt(settings.freeDeliveryAbove);
+
   const images = parseImages(product.images);
   const off = discountPercent(product.price, product.oldPrice);
   const note = PTA_NOTES[product.ptaStatus];
@@ -92,7 +110,7 @@ export default async function ProductPage({ params }: Props) {
         ])}
       />
 
-      <div className="container-x py-8 sm:py-10">
+      <div className="container-x py-8 pb-28 sm:py-10 sm:pb-28 lg:pb-10">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted">
           <Link href="/" className="hover:text-brand-700">Home</Link>
           <span aria-hidden="true"> / </span>
@@ -153,7 +171,7 @@ export default async function ProductPage({ params }: Props) {
               </p>
             )}
 
-            <div className="mt-6">
+            <div className="mt-6 scroll-mt-40" id="buy">
               <AddToCart
                 product={{
                   id: product.id,
@@ -182,6 +200,25 @@ export default async function ProductPage({ params }: Props) {
               </li>
             </ul>
 
+            <section aria-labelledby="order-title" className="mt-8 rounded-2xl border border-line p-5 sm:p-6">
+              <h2 id="order-title" className="text-h3">How to order</h2>
+              <ol className="mt-4 space-y-3 text-[15px] text-ink-800">
+                {["Press Add to cart, then go to checkout.", "Enter your name, phone number and address.", "We confirm, deliver, and you pay after checking the phone."].map((t, i) => (
+                  <li key={t} className="flex items-start gap-3">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>
+                    <span className="pt-0.5">{t}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-4 flex items-start gap-2 text-sm text-muted">
+                <Icon name="truck" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                <span>
+                  {fee > 0 ? `Delivery ${formatPrice(fee)}${freeAbove > 0 ? `, free above ${formatPrice(freeAbove)}` : ""}.` : "Free delivery."}{" "}
+                  <Link href="/how-to-buy" className="font-semibold text-brand-700 hover:underline">Read the full guide</Link>
+                </span>
+              </p>
+            </section>
+
             <section aria-labelledby="specs-title" className="mt-10">
               <h2 id="specs-title" className="text-h3">Specifications</h2>
               <dl className="card mt-4 divide-y divide-line overflow-hidden text-[15px]">
@@ -205,17 +242,19 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
 
-        {related.length > 0 && (
+        {more.length > 0 && (
           <section className="mt-20" aria-labelledby="related-title">
-            <h2 id="related-title" className="section-title mb-8">More from {product.brand}</h2>
+            <h2 id="related-title" className="section-title mb-8">{related.length >= 4 ? `More from ${product.brand}` : "You may also like"}</h2>
             <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-              {related.map((p) => (
+              {more.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </section>
         )}
       </div>
+
+      <StickyBuyBar name={product.name} price={product.price} soldOut={product.stock <= 0} />
     </>
   );
 }

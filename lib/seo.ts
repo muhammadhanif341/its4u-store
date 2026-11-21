@@ -92,6 +92,27 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[], base: 
   };
 }
 
+export function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((i) => ({
+      "@type": "Question",
+      name: i.q,
+      acceptedAnswer: { "@type": "Answer", text: i.a },
+    })),
+  };
+}
+
+export function howToJsonLd(name: string, steps: { title: string; text: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name,
+    step: steps.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s.title, text: s.text })),
+  };
+}
+
 export function storeJsonLd(
   s: { shopName: string; tagline: string; phone: string; address: string },
   base: string = siteUrl(),

@@ -288,5 +288,47 @@ await check("a forged admin cookie is not accepted", async () => {
   assert.ok([302, 303, 307, 308].includes(r.status));
 });
 
+await check("home page has brands, budgets, how to buy, deals and questions", async () => {
+  const r = await get("/");
+  assert.equal(r.status, 200);
+  for (const text of ["Shop by brand", "What can you spend?", "How to buy in 4 steps", "Good to know before you order"]) {
+    assert.ok(r.text.includes(text), text);
+  }
+  assert.equal(count(r.text, /data-testid="how-to-buy-steps"/g), 1);
+  assert.ok(count(r.text, /<details/g) >= 5, "the questions open and close");
+  assert.match(r.text, /"@type":"FAQPage"/);
+  assert.match(r.text, /href="\/shop\?minPrice=50000&amp;maxPrice=100000"/);
+});
+
+await check("how-to-buy page explains the steps, payment, delivery and the checks on arrival", async () => {
+  const r = await get("/how-to-buy");
+  assert.equal(r.status, 200);
+  assert.equal(count(r.text, /<h1/g), 1);
+  assert.match(r.text, /<title>How to Buy \| /);
+  assert.match(r.text, /rel="canonical" href="[^"]+\/how-to-buy"/);
+  for (const text of ["Choose your phone", "Cash on Delivery", "Check these before you pay", "*#06#"]) {
+    assert.ok(r.text.includes(text), text);
+  }
+  assert.match(r.text, /"@type":"HowTo"/);
+  assert.match(r.text, /"@type":"FAQPage"/);
+});
+
+await check("every page links to how to buy, and the sitemap lists it", async () => {
+  const home = await get("/");
+  assert.ok(count(home.text, /href="\/how-to-buy"/g) >= 2, "header and footer");
+  assert.match((await get("/sitemap.xml")).text, /<loc>[^<]+\/how-to-buy<\/loc>/);
+});
+
+await check("product page has a buy anchor, order steps and a mobile buy bar", async () => {
+  const shop = await get("/shop");
+  const slug = shop.text.match(/href="\/shop\/([a-z0-9-]+)"/)[1];
+  const r = await get(`/shop/${slug}`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /id="buy"/);
+  assert.ok(r.text.includes("How to order"));
+  assert.match(r.text, /data-testid="sticky-buy-bar"/);
+  assert.match(r.text, /<a[^>]*href="#buy"[^>]*>[^<]*Order now/);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

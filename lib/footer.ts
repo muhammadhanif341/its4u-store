@@ -10,6 +10,7 @@ export const SHOP_LINKS = [
 ] as const;
 
 export const HELP_LINKS = [
+  { href: "/how-to-buy", label: "How to buy" },
   { href: "/track", label: "Track your order" },
   { href: "/policies", label: "Warranty and returns" },
 ] as const;
