@@ -123,7 +123,7 @@ test("home page has brands, budgets, deals, how to buy and questions, and the pr
   }
   assert.equal((home.match(/<h1/g) ?? []).length, 1, "exactly one h1");
   const product = read("app/(store)/shop/[slug]/page.tsx");
-  assert.match(product, /id="buy"/);
+  assert.match(product, /anchorId="buy"/);
   assert.match(product, /<StickyBuyBar/);
   assert.match(product, /How to order/);
 });

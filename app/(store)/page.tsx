@@ -9,7 +9,11 @@ import { faqJsonLd, storeJsonLd, websiteJsonLd } from "@/lib/seo";
 import { BUDGETS, budgetHref, buildFaqs } from "@/lib/storefront";
 import { CONDITION_TONE, PTA_TONE, toneFor } from "@/lib/ui";
 import { Faq } from "@/components/Faq";
-import { HeroArt } from "@/components/HeroArt";
+import { CardStack } from "@/components/home/CardStack";
+import { FeatureShowcase } from "@/components/home/FeatureShowcase";
+import { GradeAccordion } from "@/components/home/GradeAccordion";
+import { HeroDevices } from "@/components/home/HeroDevices";
+import { RotatingText } from "@/components/home/RotatingText";
 import { HowToBuy } from "@/components/HowToBuy";
 import { Icon, type IconName } from "@/components/Icons";
 import { JsonLd } from "@/components/JsonLd";
@@ -17,13 +21,6 @@ import { ProductCard } from "@/components/ProductCard";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
-
-const TRUST: { icon: IconName; title: string; text: string }[] = [
-  { icon: "star", title: "Condition graded", text: "Every used phone is graded from Fair to Like New, with real photos of the actual phone." },
-  { icon: "shield", title: "PTA status shown", text: "PTA Approved, Non-PTA or JV is written clearly on every single phone." },
-  { icon: "cash", title: "Cash on delivery", text: "Open the parcel, check the phone, then pay the rider. No advance needed." },
-  { icon: "chat", title: "Real human support", text: "Questions before you buy? Message us on WhatsApp and we will help." },
-];
 
 export default async function HomePage() {
   const [settings, featured, latest, total, brandRows, cheapest, nNew, nUsed, nPta, nNonPta, nJv, brandCounts, dealRows] = await Promise.all([
@@ -44,6 +41,15 @@ export default async function HomePage() {
 
   const deals = dealRows.filter((p) => p.oldPrice !== null && p.oldPrice > p.price).slice(0, 4);
   const faqs = buildFaqs(settings).slice(0, 6);
+  const stackPhones = (featured.length >= 2 ? featured : latest).slice(0, 5);
+  const deviceList = stackPhones.slice(0, 3).map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    brand: p.brand,
+    price: p.price,
+    condition: p.condition,
+    ptaStatus: p.ptaStatus,
+  }));
 
   const categories: { href: string; title: string; text: string; icon: IconName; count: number }[] = [
     { href: "/shop?type=new", title: "New phones", text: "Box packed, with warranty", icon: "box", count: nNew },
@@ -75,7 +81,9 @@ export default async function HomePage() {
               Honest condition. Clear PTA status.
             </p>
             <h1 id="hero-title" className="mt-6 text-display !text-white">
-              Find your next phone. <span className="text-gradient">Know exactly</span> what you are buying.
+              Find your next <span className="sr-only">phone</span>
+              <RotatingText words={["iPhone", "Galaxy", "Pixel", "Redmi", "phone"]} />
+              . <span className="text-gradient">Know exactly</span> what you are buying.
             </h1>
             <p className="mt-6 max-w-xl text-lead !text-slate-300">
               New and used phones, graded by condition and clearly marked PTA Approved, Non-PTA or JV. See the real price and condition before you order, then pay on delivery.
@@ -102,7 +110,7 @@ export default async function HomePage() {
             </dl>
           </div>
           <div className="hidden md:block">
-            <HeroArt />
+            <HeroDevices phones={deviceList} />
           </div>
         </div>
       </section>
@@ -191,49 +199,41 @@ export default async function HomePage() {
         </section>
       )}
 
-      {featured.length > 0 && (
+      {stackPhones.length > 0 && (
         <section className="container-x pt-20" aria-labelledby="featured-title">
-          <SectionHeading eyebrow="Hand picked" title="Featured phones" text="Our top picks right now." href="/shop" />
-          <h3 id="featured-title" className="sr-only">Featured products</h3>
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto] lg:gap-16">
+            <div className="max-w-xl">
+              <p className="eyebrow">Hand picked</p>
+              <h2 id="featured-title" className="section-title mt-2">Featured phones</h2>
+              <p className="mt-4 text-lead text-body">
+                Swipe through our top picks right now. Tap a phone to see its full condition report, price and specifications.
+              </p>
+              <Link href="/shop" className="btn-primary mt-6">
+                Browse all phones
+                <Icon name="arrow" className="h-4 w-4" />
+              </Link>
+            </div>
+            <CardStack
+              label="Featured phones"
+              items={stackPhones.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            />
           </div>
         </section>
       )}
 
       {/* How we grade */}
       <section className="container-x pt-20" aria-labelledby="grade-title">
-        <div className="card grid gap-10 overflow-hidden p-6 sm:p-10 lg:grid-cols-[0.8fr_1.2fr]">
-          <div>
-            <p className="eyebrow">No surprises</p>
-            <h2 id="grade-title" className="section-title mt-2">
-              How we grade every phone
-            </h2>
-            <p className="mt-4 text-lead text-body">
-              Used phones are graded by us and shown with real photos. The grade is on every listing, so you always know what condition you are paying for.
-            </p>
-            <Link href="/policies" className="btn-ghost mt-5 -ml-3">
-              Read the full rules
-              <Icon name="arrow" className="h-4 w-4" />
-            </Link>
-          </div>
-          <ul className="space-y-4">
-            {CONDITIONS.map((c) => (
-              <li key={c.value} className="rounded-xl border border-line p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className={`badge ${toneFor(CONDITION_TONE, c.value)}`}>{c.label}</span>
-                  <span className="text-sm font-semibold text-ink-900">{CONDITION_SCORE[c.value]}/10</span>
-                </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
-                  <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-400" style={{ width: `${CONDITION_SCORE[c.value] * 10}%` }} />
-                </div>
-                <p className="mt-2.5 text-sm text-muted">{CONDITION_TEXT[c.value]}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <SectionHeading
+          eyebrow="No surprises"
+          title="How we grade every phone"
+          text="Used phones are graded by us and shown with real photos. The grade is on every listing, so you always know what condition you are paying for."
+          href="/policies"
+          hrefLabel="Read the full rules"
+        />
+        <h3 id="grade-title" className="sr-only">Condition grades</h3>
+        <GradeAccordion />
       </section>
 
       {/* PTA explained */}
@@ -280,17 +280,7 @@ export default async function HomePage() {
       <section className="container-x pt-20" aria-labelledby="why-title">
         <SectionHeading eyebrow="Why shop with us" title="Buying a phone should feel safe" />
         <h3 id="why-title" className="sr-only">Our promises</h3>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {TRUST.map((t) => (
-            <li key={t.title} className="card p-6">
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700">
-                <Icon name={t.icon} className="h-5 w-5" />
-              </span>
-              <h3 className="mt-4 text-base font-semibold">{t.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{t.text}</p>
-            </li>
-          ))}
-        </ul>
+        <FeatureShowcase />
       </section>
 
       {/* Questions */}

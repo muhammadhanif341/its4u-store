@@ -53,6 +53,57 @@ export const tones = {
   brand: { fg: "#2E2D91", bg: "#E1E5FF" },
 } as const;
 
+/**
+ * The dark theme of the shop (the admin panel stays light). Every colour that changes is listed here,
+ * app/globals.css repeats these exact values inside [data-theme="dark"], and tests/dark-theme.test.ts
+ * checks that the CSS and these tokens agree and that every pair is readable.
+ */
+export const dark = {
+  page: "#080D1A",
+  card: "#101A2E",
+  input: "#0B1324",
+  sunken: "#16223A",
+  line: "#25324F",
+  heading: "#F1F5FB",
+  body: "#CBD5E1",
+  muted: "#9AA8BF",
+  link: "#A5AEFF",
+  placeholder: "#8392AA",
+  brandSoft: "#1B2257",
+  brandSoftHover: "#262E78",
+  chip: "#1F2B4D",
+  tones: {
+    success: { fg: "#6EE7B7", bg: "#0E3B2D" },
+    warning: { fg: "#FCD34D", bg: "#3B2A0B" },
+    danger: { fg: "#FDA4AF", bg: "#4A1627" },
+    info: { fg: "#7DD3FC", bg: "#0C2E47" },
+    violet: { fg: "#C4B5FD", bg: "#2C1F5E" },
+    neutral: { fg: "#CBD5E1", bg: "#1E2A44" },
+    brand: { fg: "#C7CCFF", bg: "#262C6E" },
+  },
+} as const;
+
+/** Text-on-background pairs for the dark theme. */
+export const darkContrastPairs: { name: string; fg: string; bg: string; min: number }[] = [
+  { name: "headings on page", fg: dark.heading, bg: dark.page, min: 7 },
+  { name: "headings on card", fg: dark.heading, bg: dark.card, min: 7 },
+  { name: "headings on sunken", fg: dark.heading, bg: dark.sunken, min: 7 },
+  { name: "body on page", fg: dark.body, bg: dark.page, min: 7 },
+  { name: "body on card", fg: dark.body, bg: dark.card, min: 7 },
+  { name: "body on sunken", fg: dark.body, bg: dark.sunken, min: 4.5 },
+  { name: "muted on page", fg: dark.muted, bg: dark.page, min: 4.5 },
+  { name: "muted on card", fg: dark.muted, bg: dark.card, min: 4.5 },
+  { name: "muted on sunken", fg: dark.muted, bg: dark.sunken, min: 4.5 },
+  { name: "link on page", fg: dark.link, bg: dark.page, min: 4.5 },
+  { name: "link on card", fg: dark.link, bg: dark.card, min: 4.5 },
+  { name: "link on soft brand", fg: dark.link, bg: dark.brandSoft, min: 4.5 },
+  { name: "link on soft brand (hover)", fg: dark.link, bg: dark.brandSoftHover, min: 4.5 },
+  { name: "input text", fg: dark.heading, bg: dark.input, min: 7 },
+  { name: "input placeholder", fg: dark.placeholder, bg: dark.input, min: 4.5 },
+  { name: "active chip", fg: "#FFFFFF", bg: dark.chip, min: 7 },
+  ...Object.entries(dark.tones).map(([name, t]) => ({ name: `${name} badge (dark)`, fg: t.fg, bg: t.bg, min: 4.5 })),
+];
+
 const WHITE = "#FFFFFF";
 
 /** Every text-on-background combination used in the UI, with the minimum ratio it must reach. */

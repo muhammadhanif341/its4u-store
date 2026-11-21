@@ -3,6 +3,8 @@ import { formatPrice, whatsappUrl } from "@/lib/format";
 import { CartLink } from "./CartLink";
 import { Icon } from "./Icons";
 import { Logo } from "./Logo";
+import { PillNav } from "./PillNav";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { href: "/shop", label: "All phones" },
@@ -33,7 +35,7 @@ function SearchForm({ className = "" }: { className?: string }) {
   );
 }
 
-export function Header({ shopName, freeAbove, whatsapp }: { shopName: string; freeAbove: number; whatsapp: string }) {
+export function Header({ shopName, freeAbove, whatsapp, brands = [] }: { shopName: string; freeAbove: number; whatsapp: string; brands?: string[] }) {
   return (
     <>
       <div className="bg-ink-900 text-[13px] text-slate-200">
@@ -66,27 +68,19 @@ export function Header({ shopName, freeAbove, whatsapp }: { shopName: string; fr
             <Logo name={shopName} />
           </Link>
           <SearchForm className="mx-auto hidden max-w-xl flex-1 md:block" />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <CartLink />
           </div>
         </div>
         <div className="container-x pb-3 md:hidden">
           <SearchForm />
         </div>
-        <nav aria-label="Main" className="hidden border-t border-line md:block">
-          <ul className="container-x no-scrollbar flex gap-1 overflow-x-auto py-1.5 text-sm">
-            {NAV.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="block whitespace-nowrap rounded-lg px-3.5 py-2 font-semibold text-body transition hover:bg-brand-50 hover:text-brand-700"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <div className="hidden border-t border-line md:block">
+          <div className="container-x">
+            <PillNav brands={brands} />
+          </div>
+        </div>
         <nav aria-label="Main" className="border-t border-line md:hidden">
           <ul className="no-scrollbar flex gap-1 overflow-x-auto px-4 py-1.5 text-sm">
             {NAV.map((item) => (

@@ -53,6 +53,12 @@ Open `/admin` and sign in with the username and password from `.env`. After 5 wr
 
 - **Footer:** a dark glass card with three soft lights that slowly "breathe" (indigo, amber, cyan), a glowing WhatsApp button, link columns (Shop, Help, Contact with tap-to-call), a divider and a credit line. The lights pause while the footer is off screen, and everything stays still for people who prefer reduced motion. Content fades up on scroll in browsers that support it, and is simply shown in the others. Text over the brightest light is tested for contrast.
 
+- **Dark theme:** the shop is dark by default and visitors can switch to light with the sun/moon button (the choice is remembered on their device). The colours live in `dark` in `lib/design-tokens.ts` and are repeated inside `[data-theme="dark"]` in `app/globals.css`; a test checks that both agree and that every text and background pair is readable. The admin panel stays light.
+- **Shop:** a filter sidebar (type, PTA status, brand, condition, storage, price) with counts on every option, sorting, and a cards or rows switch. On phones the sidebar folds into a Filters button.
+- **Phone page:** laid out like a record. A header with the status, a left sidebar (contents, quick facts), the sections in the middle (overview, specifications, condition report, delivery and warranty), a sticky buy panel on the right, and a 3D view of the phone model. On phones it becomes one column with an Order now bar.
+- **Home page extras:** a rotating word in the heading, phone mockups, a swipeable stack of featured phones, an accordion for the grades and tabs for the reasons to buy. These were built natively in React and CSS, inspired by Framer components, so the site does not depend on Framer.
+- **Header:** pill menus (Shop, PTA status, Brands, Budget) that open from the bar.
+
 ## SEO
 
 - Title, description, canonical link and Open Graph tags on every page (filtered shop pages get their own title)

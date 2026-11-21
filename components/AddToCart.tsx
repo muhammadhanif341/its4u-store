@@ -44,7 +44,7 @@ export function AddToCart({ product }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
+    <div className="flex flex-col gap-3">
       <button type="button" onClick={buyNow} className="btn-accent flex-1 !min-h-[52px] text-base" data-testid="buy-now">
         Buy now
         <Icon name="arrow" className="h-5 w-5" />

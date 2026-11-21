@@ -118,9 +118,10 @@ await check("fonts are self-hosted with font-display: swap (no request to Google
   const r = await get("/");
   assert.ok(!/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(r.text), "page still calls Google Fonts");
   assert.match(r.text, /<html lang="en" class="[^"]*variable/);
-  const cssHref = r.text.match(/<link rel="stylesheet" href="(\/_next\/static\/css\/[^"]+\.css)"/)?.[1];
-  assert.ok(cssHref, "no stylesheet found");
-  const css = (await get(cssHref)).text;
+  // Next.js may split the CSS into several files, so read all of them
+  const cssHrefs = [...r.text.matchAll(/<link rel="stylesheet" href="(\/_next\/static\/css\/[^"]+\.css)"/g)].map((m) => m[1]);
+  assert.ok(cssHrefs.length > 0, "no stylesheet found");
+  const css = (await Promise.all(cssHrefs.map((h) => get(h).then((x) => x.text)))).join(" ");
   // two self-hosted variable fonts: one weight range for headings (300 to 700), one for text (100 to 1000)
   const all = css.match(/@font-face\{[^}]*\}/g) ?? [];
   const faces = all.filter((f) => /src:url\(/.test(f));
@@ -328,6 +329,56 @@ await check("product page has a buy anchor, order steps and a mobile buy bar", a
   assert.ok(r.text.includes("How to order"));
   assert.match(r.text, /data-testid="sticky-buy-bar"/);
   assert.match(r.text, /<a[^>]*href="#buy"[^>]*>[^<]*Order now/);
+});
+
+await check("the shop is dark by default with a theme button, and the admin panel is not themed", async () => {
+  const home = await get("/");
+  assert.match(home.text, /id="store-root"[^>]*data-theme="dark"|data-theme="dark"[^>]*id="store-root"/);
+  assert.match(home.text, /data-testid="theme-toggle"/);
+  assert.match(home.text, /its4u-theme/, "the saved choice is applied before the page paints");
+  const login = await get("/admin/login");
+  assert.doesNotMatch(login.text, /data-theme=/);
+});
+
+await check("header has pill menus for shop, PTA status, brands and budget", async () => {
+  const r = await get("/");
+  assert.equal(count(r.text, /aria-haspopup="true"/g), 4);
+  for (const label of ["Shop", "PTA status", "Brands", "Budget"]) assert.ok(r.text.includes(`>${label}<`), label);
+});
+
+await check("home page has the rotating word, phone mockups, a card stack, grade accordion and feature tabs", async () => {
+  const r = await get("/");
+  for (const id of ["rotating-text", "hero-devices", "grade-accordion", "feature-showcase"]) assert.ok(r.text.includes(`data-testid="${id}"`), id);
+  assert.match(r.text, /aria-roledescription="carousel"/);
+  assert.match(r.text, /<h1[^>]*>[^]*?<span class="sr-only">phone<\/span>/);
+  assert.equal(count(r.text, /<h1/g), 1);
+});
+
+await check("shop has a filter sidebar with counts, a cards or rows switch, and rows view works", async () => {
+  const r = await get("/shop");
+  assert.equal(r.status, 200);
+  assert.equal(count(r.text, /data-testid="filter-panel"/g), 2, "one for phones and one for desktops");
+  assert.match(r.text, /aria-label="Show phones as a list"/);
+  assert.equal(count(r.text, /data-testid="product-grid"/g), 1);
+  const list = await get("/shop?view=list&pta=pta");
+  assert.equal(list.status, 200);
+  assert.equal(count(list.text, /data-testid="product-list"/g), 1);
+  assert.equal(count(list.text, /data-testid="product-grid"/g), 0);
+  assert.match(list.text, /\/shop\?view=list[^"]*"|view=list/);
+  assert.match(list.text, /data-testid="result-count"[^>]*>7 phones found/);
+});
+
+await check("product page is laid out like a record with side bars and a 3D view tab", async () => {
+  const shop = await get("/shop");
+  const slug = shop.text.match(/href="\/shop\/([a-z0-9-]+)"/)[1];
+  const r = await get(`/shop/${slug}`);
+  assert.equal(r.status, 200);
+  for (const text of ['data-testid="record-header"', 'aria-label="Phone summary"', 'aria-label="Buy this phone"', 'data-testid="section-nav-rail"', 'data-testid="section-nav-bar"', "Quick facts", "Condition report", "3D view"]) {
+    assert.ok(r.text.includes(text), text);
+  }
+  for (const id of ["overview", "specs", "condition", "delivery"]) assert.ok(r.text.includes(`id="${id}"`), id);
+  assert.equal(count(r.text, /<h1/g), 1);
+  assert.equal(count(r.text, / id="buy"/g), 1);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -3,18 +3,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { toInt } from "@/lib/pricing";
 import { conditionLabel, ptaLabel } from "@/lib/constants";
-import { PTA_NOTES } from "@/lib/content";
-import { discountPercent, formatPrice, parseImages, whatsappUrl } from "@/lib/format";
+import { CONDITION_SCORE, CONDITION_TEXT, PTA_NOTES, PTA_TEXT } from "@/lib/content";
+import { formatDate, formatPrice, parseImages, whatsappUrl } from "@/lib/format";
 import { absoluteUrl, breadcrumbJsonLd, productDescription, productJsonLd } from "@/lib/seo";
-import { AddToCart } from "@/components/AddToCart";
 import { ConditionBadge, PtaBadge } from "@/components/Badges";
-import { Gallery } from "@/components/Gallery";
 import { Icon, type IconName } from "@/components/Icons";
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
 import { StickyBuyBar } from "@/components/StickyBuyBar";
-import { toInt } from "@/lib/pricing";
+import { BuyPanel } from "@/components/product/BuyPanel";
+import { MediaPanel } from "@/components/product/MediaPanel";
+import { Meter, Panel } from "@/components/product/Panel";
+import { SectionNav } from "@/components/product/SectionNav";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -72,8 +74,16 @@ export default async function ProductPage({ params }: Props) {
   const freeAbove = toInt(settings.freeDeliveryAbove);
 
   const images = parseImages(product.images);
-  const off = discountPercent(product.price, product.oldPrice);
   const note = PTA_NOTES[product.ptaStatus];
+  const score = CONDITION_SCORE[product.condition] ?? 8;
+
+  const sections = [
+    { id: "overview", label: "Overview" },
+    { id: "specs", label: "Specifications" },
+    { id: "condition", label: "Condition report" },
+    { id: "delivery", label: "Delivery and warranty" },
+    ...(more.length > 0 ? [{ id: "similar", label: "Similar phones" }] : []),
+  ];
 
   const highlights = [
     product.storage && { icon: "box" as IconName, label: "Storage", value: product.storage },
@@ -93,11 +103,21 @@ export default async function ProductPage({ params }: Props) {
     ["Battery health", product.batteryHealth ? `${product.batteryHealth}%` : ""],
     ["Warranty", product.warranty],
   ];
+  const facts = specs.filter(([k, v]) => v && ["Brand", "Model", "Storage", "RAM", "Color", "Battery health", "Warranty"].includes(k));
 
   const inquiry = whatsappUrl(
     settings.whatsapp,
     `Hello ${settings.shopName}, I am interested in: ${product.name} (${ptaLabel(product.ptaStatus)}, ${conditionLabel(product.condition)}).`,
   );
+  const buy = {
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    price: product.price,
+    oldPrice: product.oldPrice,
+    stock: product.stock,
+    warranty: product.warranty,
+  };
 
   return (
     <>
@@ -110,8 +130,8 @@ export default async function ProductPage({ params }: Props) {
         ])}
       />
 
-      <div className="container-x py-8 pb-28 sm:py-10 sm:pb-28 lg:pb-10">
-        <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted">
+      <div className="container-x py-6 pb-28 sm:py-8 sm:pb-28 lg:pb-10">
+        <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted">
           <Link href="/" className="hover:text-brand-700">Home</Link>
           <span aria-hidden="true"> / </span>
           <Link href="/shop" className="hover:text-brand-700">Shop</Link>
@@ -119,109 +139,115 @@ export default async function ProductPage({ params }: Props) {
           <span className="text-ink-900">{product.name}</span>
         </nav>
 
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className="lg:sticky lg:top-44 lg:self-start">
-            <Gallery images={images} name={product.name} brand={product.brand} />
+        {/* Record header: who this is and its status at a glance */}
+        <header className="card flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5" data-testid="record-header">
+          <div className="flex min-w-0 items-center gap-4">
+            <span
+              aria-hidden="true"
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 font-display text-2xl font-bold text-white shadow-glow"
+            >
+              {product.brand.charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{product.brand}</p>
+              <h1 className="mt-0.5 !text-2xl sm:!text-3xl">{product.name}</h1>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <ConditionBadge value={product.condition} />
+                <PtaBadge value={product.ptaStatus} />
+                {product.stock <= 0 ? (
+                  <span className="badge bg-tone-danger-bg text-tone-danger-fg">Sold out</span>
+                ) : product.stock <= 2 ? (
+                  <span className="badge bg-tone-warning-bg text-tone-warning-fg">Only {product.stock} left</span>
+                ) : (
+                  <span className="badge bg-tone-success-bg text-tone-success-fg">In stock</span>
+                )}
+              </div>
+            </div>
           </div>
+          <div className="text-right">
+            <p className="font-display text-3xl font-bold tracking-tight text-ink-900">{formatPrice(product.price)}</p>
+            <a href={inquiry} target="_blank" rel="noreferrer" className="btn-ghost btn-sm mt-1 -mr-2">
+              <Icon name="chat" className="h-4 w-4" />
+              Ask on WhatsApp
+            </a>
+          </div>
+        </header>
 
-          <div>
-            <div className="flex flex-wrap gap-2">
-              <ConditionBadge value={product.condition} />
-              <PtaBadge value={product.ptaStatus} />
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[230px_minmax(0,1fr)_340px]">
+          {/* Left sidebar (large screens): contents and quick facts */}
+          <aside aria-label="Phone summary" className="hidden xl:col-start-1 xl:row-start-1 xl:block">
+            <div className="sticky top-44 space-y-4">
+              <div className="card p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">On this page</p>
+                <SectionNav sections={sections} variant="rail" />
+              </div>
+              <div className="card p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Quick facts</p>
+                <dl className="space-y-2.5 text-sm">
+                  {facts.map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-3">
+                      <dt className="text-muted">{k}</dt>
+                      <dd className="text-right font-semibold text-ink-900">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div className="card p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Record</p>
+                <dl className="space-y-2.5 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">Listed</dt>
+                    <dd className="text-right font-semibold text-ink-900">{formatDate(product.createdAt)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">In stock</dt>
+                    <dd className="font-semibold text-ink-900">{product.stock}</dd>
+                  </div>
+                </dl>
+              </div>
             </div>
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.14em] text-muted">{product.brand}</p>
-            <h1 className="mt-1">{product.name}</h1>
+          </aside>
 
-            <div className="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <p className="font-display text-4xl font-bold tracking-tight text-ink-900">{formatPrice(product.price)}</p>
-              {product.oldPrice && product.oldPrice > product.price && (
-                <>
-                  <p className="text-lg text-muted line-through">{formatPrice(product.oldPrice)}</p>
-                  <span className="badge bg-accent-400 text-ink-900">Save {off}%</span>
-                </>
+          {/* Right sidebar (large screens): the buy panel */}
+          <aside aria-label="Buy this phone" className="hidden lg:col-start-2 lg:row-start-1 lg:block xl:col-start-3">
+            <div className="sticky top-44">
+              <BuyPanel product={buy} image={images[0] ?? null} fee={fee} freeAbove={freeAbove} inquiryHref={inquiry} />
+            </div>
+          </aside>
+
+          {/* Centre: the record itself */}
+          <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 xl:col-start-2">
+            <div className="xl:hidden">
+              <SectionNav sections={sections} variant="bar" />
+            </div>
+
+            <MediaPanel images={images} name={product.name} brand={product.brand} model={product.model} />
+
+            <div className="lg:hidden">
+              <BuyPanel product={buy} image={images[0] ?? null} fee={fee} freeAbove={freeAbove} inquiryHref={inquiry} anchorId="buy" />
+            </div>
+
+            <Panel id="overview" title="Overview" icon="eye">
+              {highlights.length > 0 && (
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {highlights.map((h) => (
+                    <li key={h.label} className="rounded-xl border border-line p-3.5">
+                      <Icon name={h.icon} className="h-5 w-5 text-brand-600" />
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted">{h.label}</p>
+                      <p className="text-sm font-semibold text-ink-900">{h.value}</p>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </div>
-
-            <p className="mt-3 flex items-center gap-2 text-sm font-semibold">
-              {product.stock <= 0 ? (
-                <span className="badge bg-tone-danger-bg text-tone-danger-fg">Sold out</span>
-              ) : product.stock <= 2 ? (
-                <span className="badge bg-tone-warning-bg text-tone-warning-fg">Only {product.stock} left</span>
+              {product.description ? (
+                <p className={`whitespace-pre-line leading-relaxed text-body ${highlights.length > 0 ? "mt-5" : ""}`}>{product.description}</p>
               ) : (
-                <span className="badge bg-tone-success-bg text-tone-success-fg">In stock</span>
+                <p className="text-muted">Ask us on WhatsApp for more details about this phone.</p>
               )}
-            </p>
+            </Panel>
 
-            {highlights.length > 0 && (
-              <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {highlights.map((h) => (
-                  <li key={h.label} className="rounded-xl border border-line bg-white p-3.5">
-                    <Icon name={h.icon} className="h-5 w-5 text-brand-600" />
-                    <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted">{h.label}</p>
-                    <p className="text-sm font-semibold text-ink-900">{h.value}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {note && (
-              <p className="mt-6 flex gap-3 rounded-xl border border-[#FCD34D] bg-tone-warning-bg p-4 text-sm leading-relaxed text-tone-warning-fg" role="note">
-                <Icon name="alert" className="mt-0.5 h-5 w-5 shrink-0" />
-                {note}
-              </p>
-            )}
-
-            <div className="mt-6 scroll-mt-40" id="buy">
-              <AddToCart
-                product={{
-                  id: product.id,
-                  slug: product.slug,
-                  name: product.name,
-                  price: product.price,
-                  image: images[0] ?? null,
-                  stock: product.stock,
-                }}
-              />
-              <a href={inquiry} target="_blank" rel="noreferrer" className="btn-outline mt-3 w-full">
-                <Icon name="chat" className="h-5 w-5" />
-                Ask about this phone on WhatsApp
-              </a>
-            </div>
-
-            <ul className="mt-6 grid gap-3 rounded-2xl bg-surface-sunken p-5 text-sm sm:grid-cols-3">
-              <li className="flex items-center gap-2.5 font-medium text-ink-800">
-                <Icon name="cash" className="h-5 w-5 text-brand-600" /> Cash on delivery
-              </li>
-              <li className="flex items-center gap-2.5 font-medium text-ink-800">
-                <Icon name="shield" className="h-5 w-5 text-brand-600" /> Condition graded
-              </li>
-              <li className="flex items-center gap-2.5 font-medium text-ink-800">
-                <Icon name="truck" className="h-5 w-5 text-brand-600" /> Delivery in Pakistan
-              </li>
-            </ul>
-
-            <section aria-labelledby="order-title" className="mt-8 rounded-2xl border border-line p-5 sm:p-6">
-              <h2 id="order-title" className="text-h3">How to order</h2>
-              <ol className="mt-4 space-y-3 text-[15px] text-ink-800">
-                {["Press Add to cart, then go to checkout.", "Enter your name, phone number and address.", "We confirm, deliver, and you pay after checking the phone."].map((t, i) => (
-                  <li key={t} className="flex items-start gap-3">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>
-                    <span className="pt-0.5">{t}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-4 flex items-start gap-2 text-sm text-muted">
-                <Icon name="truck" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-                <span>
-                  {fee > 0 ? `Delivery ${formatPrice(fee)}${freeAbove > 0 ? `, free above ${formatPrice(freeAbove)}` : ""}.` : "Free delivery."}{" "}
-                  <Link href="/how-to-buy" className="font-semibold text-brand-700 hover:underline">Read the full guide</Link>
-                </span>
-              </p>
-            </section>
-
-            <section aria-labelledby="specs-title" className="mt-10">
-              <h2 id="specs-title" className="text-h3">Specifications</h2>
-              <dl className="card mt-4 divide-y divide-line overflow-hidden text-[15px]">
+            <Panel id="specs" title="Specifications" icon="sliders">
+              <dl className="divide-y divide-line overflow-hidden rounded-xl border border-line text-[15px]">
                 {specs
                   .filter(([, v]) => v)
                   .map(([k, v]) => (
@@ -231,19 +257,71 @@ export default async function ProductPage({ params }: Props) {
                     </div>
                   ))}
               </dl>
-            </section>
+            </Panel>
 
-            {product.description && (
-              <section aria-labelledby="desc-title" className="mt-10">
-                <h2 id="desc-title" className="text-h3">About this phone</h2>
-                <p className="mt-3 whitespace-pre-line leading-relaxed text-body">{product.description}</p>
-              </section>
-            )}
+            <Panel id="condition" title="Condition report" icon="star" note="Graded by the shop">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-5">
+                  <Meter label="Condition grade" value={score} max={10} display={`${score}/10`} />
+                  {product.batteryHealth ? <Meter label="Battery health" value={product.batteryHealth} display={`${product.batteryHealth}%`} /> : null}
+                  <p className="text-sm leading-relaxed text-body">{CONDITION_TEXT[product.condition]}</p>
+                </div>
+                <div className="rounded-xl border border-line p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <PtaBadge value={product.ptaStatus} />
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-body">{PTA_TEXT[product.ptaStatus]}</p>
+                </div>
+              </div>
+              {note && (
+                <p className="mt-5 flex gap-3 rounded-xl border border-[#FCD34D] bg-tone-warning-bg p-4 text-sm leading-relaxed text-tone-warning-fg" role="note">
+                  <Icon name="alert" className="mt-0.5 h-5 w-5 shrink-0" />
+                  {note}
+                </p>
+              )}
+            </Panel>
+
+            <Panel id="delivery" title="Delivery and warranty" icon="truck">
+              <ul className="grid gap-3 sm:grid-cols-3">
+                <li className="rounded-xl border border-line p-4">
+                  <Icon name="cash" className="h-5 w-5 text-brand-600" />
+                  <p className="mt-2 font-semibold text-ink-900">Cash on delivery</p>
+                  <p className="mt-1 text-sm text-muted">Pay the rider after you check the phone.</p>
+                </li>
+                <li className="rounded-xl border border-line p-4">
+                  <Icon name="truck" className="h-5 w-5 text-brand-600" />
+                  <p className="mt-2 font-semibold text-ink-900">Delivery</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {fee > 0 ? `${formatPrice(fee)}${freeAbove > 0 ? `, free above ${formatPrice(freeAbove)}` : ""}.` : "Free delivery."}
+                  </p>
+                </li>
+                <li className="rounded-xl border border-line p-4">
+                  <Icon name="shield" className="h-5 w-5 text-brand-600" />
+                  <p className="mt-2 font-semibold text-ink-900">Warranty</p>
+                  <p className="mt-1 text-sm text-muted">{product.warranty || "Ask us on WhatsApp about warranty."}</p>
+                </li>
+              </ul>
+
+              <h3 className="mt-6 text-base font-semibold">How to order</h3>
+              <ol className="mt-3 space-y-3 text-[15px] text-ink-800">
+                {["Press Add to cart, then go to checkout.", "Enter your name, phone number and address.", "We confirm, deliver, and you pay after checking the phone."].map((t, i) => (
+                  <li key={t} className="flex items-start gap-3">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>
+                    <span className="pt-0.5">{t}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-5 text-sm text-muted">
+                <Link href="/how-to-buy" className="font-semibold text-brand-700 hover:underline">Read the full buying guide</Link>
+                {" or "}
+                <Link href="/policies" className="font-semibold text-brand-700 hover:underline">our warranty and returns terms</Link>.
+              </p>
+            </Panel>
           </div>
         </div>
 
         {more.length > 0 && (
-          <section className="mt-20" aria-labelledby="related-title">
+          <section id="similar" className="mt-16 scroll-mt-44" aria-labelledby="related-title">
             <h2 id="related-title" className="section-title mb-8">{related.length >= 4 ? `More from ${product.brand}` : "You may also like"}</h2>
             <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
               {more.map((p) => (

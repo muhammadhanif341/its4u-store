@@ -322,3 +322,159 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Dark theme (shop only) ----------
+   The shop sits inside <div data-theme="dark"> (or "light"). Instead of editing every component,
+   this block remaps the colour classes the shop uses. Values come from `dark` in lib/design-tokens.ts. */
+html:has(#store-root[data-theme="dark"]) body {
+  background-color: #080d1a;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  background-color: #080d1a;
+}
+[data-theme="dark"] :focus-visible {
+  --tw-ring-offset-color: #080d1a;
+}
+[data-theme="dark"] .bg-surface,
+[data-theme="dark"] .to-surface {
+  background-color: #080d1a;
+  --tw-gradient-to: #080d1a;
+}
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .card,
+[data-theme="dark"] .btn-outline,
+[data-theme="dark"] .focus\:bg-white:focus {
+  background-color: #101a2e;
+}
+[data-theme="dark"] .input {
+  background-color: #0b1324;
+  color: #f1f5fb;
+}
+[data-theme="dark"] .input::placeholder,
+[data-theme="dark"] .placeholder\:text-\[\#7A8497\]::placeholder {
+  color: #8392aa;
+}
+[data-theme="dark"] .bg-surface-sunken,
+[data-theme="dark"] .hover\:bg-surface-sunken:hover,
+[data-theme="dark"] .hover\:bg-surface:hover {
+  background-color: #16223a;
+}
+[data-theme="dark"] .to-surface-sunken {
+  --tw-gradient-to: #16223a;
+}
+[data-theme="dark"] .from-white,
+[data-theme="dark"] .via-white {
+  --tw-gradient-from: #101a2e;
+  --tw-gradient-to: rgb(16 26 46 / 0);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+[data-theme="dark"] .from-brand-50 {
+  --tw-gradient-from: #1b2257;
+  --tw-gradient-to: rgb(27 34 87 / 0);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+[data-theme="dark"] .via-white {
+  --tw-gradient-stops: var(--tw-gradient-from), #101a2e, var(--tw-gradient-to);
+}
+[data-theme="dark"] .border-line,
+[data-theme="dark"] .bg-line {
+  border-color: #25324f;
+}
+[data-theme="dark"] .bg-line {
+  background-color: #25324f;
+}
+[data-theme="dark"] .divide-line > :not([hidden]) ~ :not([hidden]) {
+  border-color: #25324f;
+}
+[data-theme="dark"] .bg-white\/90,
+[data-theme="dark"] .bg-white\/95 {
+  background-color: rgb(8 13 26 / 0.92);
+}
+[data-theme="dark"] .bg-white\/75 {
+  background-color: rgb(8 13 26 / 0.78);
+}
+[data-theme="dark"] .ring-white {
+  --tw-ring-color: #080d1a;
+}
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] .text-ink-900,
+[data-theme="dark"] .text-ink-800 {
+  color: #f1f5fb;
+}
+[data-theme="dark"] .text-body,
+[data-theme="dark"] .lead {
+  color: #cbd5e1;
+}
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .hint {
+  color: #9aa8bf;
+}
+[data-theme="dark"] .text-brand-600,
+[data-theme="dark"] .text-brand-700,
+[data-theme="dark"] .text-brand-800,
+[data-theme="dark"] .eyebrow,
+[data-theme="dark"] .btn-ghost,
+[data-theme="dark"] .hover\:text-brand-700:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-brand-700 {
+  color: #a5aeff;
+}
+[data-theme="dark"] .bg-brand-50,
+[data-theme="dark"] .btn-outline:hover,
+[data-theme="dark"] .btn-ghost:hover,
+[data-theme="dark"] .hover\:bg-brand-50:hover {
+  background-color: #1b2257;
+}
+[data-theme="dark"] .hover\:bg-brand-200:hover {
+  background-color: #262e78;
+}
+[data-theme="dark"] .text-brand-100 {
+  color: #2a3377;
+}
+[data-theme="dark"] .hover\:border-brand-200:hover,
+[data-theme="dark"] .hover\:border-brand-300:hover,
+[data-theme="dark"] .btn-outline:hover {
+  border-color: #4a55c8;
+}
+[data-theme="dark"] .focus\:ring-brand-100:focus,
+[data-theme="dark"] .focus-visible\:ring-brand-100:focus-visible {
+  --tw-ring-color: rgb(91 99 242 / 0.4);
+}
+[data-theme="dark"] .bg-ink-900 {
+  background-color: #1f2b4d;
+}
+[data-theme="dark"] .border-ink-900 {
+  border-color: #5b63f2;
+}
+[data-theme="dark"] .bg-tone-success-bg { background-color: #0e3b2d; }
+[data-theme="dark"] .text-tone-success-fg { color: #6ee7b7; }
+[data-theme="dark"] .bg-tone-warning-bg { background-color: #3b2a0b; }
+[data-theme="dark"] .text-tone-warning-fg { color: #fcd34d; }
+[data-theme="dark"] .bg-tone-danger-bg { background-color: #4a1627; }
+[data-theme="dark"] .text-tone-danger-fg { color: #fda4af; }
+[data-theme="dark"] .bg-tone-info-bg { background-color: #0c2e47; }
+[data-theme="dark"] .text-tone-info-fg { color: #7dd3fc; }
+[data-theme="dark"] .bg-tone-violet-bg { background-color: #2c1f5e; }
+[data-theme="dark"] .text-tone-violet-fg { color: #c4b5fd; }
+[data-theme="dark"] .bg-tone-neutral-bg { background-color: #1e2a44; }
+[data-theme="dark"] .text-tone-neutral-fg { color: #cbd5e1; }
+[data-theme="dark"] .bg-tone-brand-bg { background-color: #262c6e; }
+[data-theme="dark"] .text-tone-brand-fg { color: #c7ccff; }
+[data-theme="dark"] .hover\:bg-tone-danger-bg:hover { background-color: #4a1627; }
+[data-theme="dark"] .hover\:text-tone-danger-fg:hover { color: #fda4af; }
+[data-theme="dark"] .border-\[\#FCD34D\] { border-color: #6b4f12; }
+[data-theme="dark"] .border-\[\#FDA4AF\] { border-color: #7f2a44; }
+[data-theme="dark"] .border-\[\#6EE7B7\] { border-color: #1d6b50; }
+/* things that are dark text on a bright colour stay dark in both themes */
+[data-theme="dark"] .btn-accent,
+[data-theme="dark"] .bg-accent-400 {
+  color: #0b1220;
+}
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-dark,
+[data-theme="dark"] .bg-brand-600 {
+  color: #ffffff;
+}
