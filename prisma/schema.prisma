@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  brand         String
+  model         String
+  storage       String   @default("")
+  ram           String   @default("")
+  color         String   @default("")
+  // new | open-box | like-new | excellent | good | fair
+  condition     String
+  // pta | non-pta | jv
+  ptaStatus     String
+  batteryHealth Int?
+  price         Int
+  oldPrice      Int?
+  stock         Int      @default(1)
+  warranty      String   @default("")
+  description   String   @default("")
+  // admin only, never shown on the storefront
+  imei          String   @default("")
+  // JSON array of image URLs
+  images        String   @default("[]")
+  featured      Boolean  @default(false)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([brand])
+  @@index([condition])
+  @@index([ptaStatus])
+  @@index([active])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNo       String      @unique
+  customerName  String
+  phone         String
+  city          String
+  address       String
+  notes         String      @default("")
+  // cod | whatsapp
+  paymentMethod String
+  // pending | confirmed | shipped | delivered | cancelled
+  status        String      @default("pending")
+  subtotal      Int
+  deliveryFee   Int
+  total         Int
+  createdAt     DateTime    @default(now())
+  items         OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  name      String
+  price     Int
+  qty       Int
+  image     String?
+}
+
+model Setting {
+  key   String @id
+  value String
+}
