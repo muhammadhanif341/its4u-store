@@ -10,10 +10,12 @@
     "seed": "tsx prisma/seed.ts",
     "setup": "prisma db push && tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "vercel-build": "node scripts/prepare-postgres.mjs && prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma --skip-generate && tsx scripts/seed-once.ts && next build"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
+    "@vercel/blob": "^2.9.0",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

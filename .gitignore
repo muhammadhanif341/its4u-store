@@ -6,3 +6,5 @@ node_modules
 data/uploads
 next-env.d.ts
 *.tsbuildinfo
+prisma/schema.postgres.prisma
+.vercel

@@ -1,4 +1,22 @@
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+// Vercel rejects request bodies above 4.5 MB, so the server accepts 4 MB. The admin page shrinks
+// big phone photos in the browser before uploading, so this is rarely reached.
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+/** Longest side, in pixels, that the browser shrinks an uploaded photo to. */
+export const MAX_IMAGE_SIDE = 1600;
+
+/** Size to draw an image at so its longest side is at most `max`. Never makes it bigger. */
+export function fitWithin(width: number, height: number, max: number = MAX_IMAGE_SIDE): { width: number; height: number } {
+  const longest = Math.max(width, height);
+  if (longest <= max) return { width, height };
+  const scale = max / longest;
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
+/** Photos go to Vercel Blob when a token is set (production), and to the local disk otherwise. */
+export function usesBlobStorage(env: Record<string, string | undefined> = process.env): boolean {
+  return Boolean(env.BLOB_READ_WRITE_TOKEN);
+}
 
 export type ImageType = { ext: "jpg" | "png" | "webp"; mime: string };
 

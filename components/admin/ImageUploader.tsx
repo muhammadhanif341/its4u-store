@@ -2,6 +2,26 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/Icons";
+import { MAX_IMAGE_SIDE, fitWithin } from "@/lib/upload";
+
+/** Shrinks a big phone photo in the browser (about 300 KB instead of 5 MB). Falls back to the original file. */
+async function shrink(file: File): Promise<File> {
+  if (file.size < 800 * 1024 || !/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = fitWithin(bitmap.width, bitmap.height, MAX_IMAGE_SIDE);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
 
 export function ImageUploader({ initial }: { initial: string[] }) {
   const [images, setImages] = useState<string[]>(initial);
@@ -18,7 +38,7 @@ export function ImageUploader({ initial }: { initial: string[] }) {
     const added: string[] = [];
     for (const file of Array.from(files)) {
       const body = new FormData();
-      body.set("file", file);
+      body.set("file", await shrink(file));
       try {
         const res = await fetch("/api/upload", { method: "POST", body });
         const json = await res.json();
@@ -82,7 +102,7 @@ export function ImageUploader({ initial }: { initial: string[] }) {
           <Icon name={busy ? "clock" : "plus"} className="h-6 w-6" />
         </span>
         <span className="text-[15px] font-semibold text-ink-900">{busy ? "Uploading..." : "Click or drop photos here"}</span>
-        <span className="text-sm text-muted">JPG, PNG or WebP, up to 5 MB each. {images.length}/8 added.</span>
+        <span className="text-sm text-muted">JPG, PNG or WebP, big photos are shrunk automatically. {images.length}/8 added.</span>
         <input
           ref={fileRef}
           type="file"

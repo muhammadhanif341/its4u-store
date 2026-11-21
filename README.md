@@ -88,6 +88,17 @@ The database is a SQLite file (`prisma/dev.db`) and uploaded photos are saved in
 
 Set `UPLOAD_DIR` to keep uploads somewhere else. Set `NEXT_DIST_DIR` to build into another folder, for example when testing a build while another server is running.
 
+## Deploying to Vercel
+
+Vercel has no writable disk, so there the shop uses **Postgres** for data and **Vercel Blob** for photos. On your computer nothing changes: SQLite and the `data/uploads` folder still work.
+
+1. Import the GitHub repository in Vercel.
+2. Add a **Postgres** database (Storage tab, for example Neon) and a **Blob** store. Vercel adds `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `BLOB_READ_WRITE_TOKEN` for you.
+3. Add `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `AUTH_SECRET` and `NEXT_PUBLIC_SITE_URL` under Settings, Environment Variables.
+4. Deploy. The build (`npm run vercel-build`) writes the Postgres schema from `prisma/schema.prisma`, creates the tables, adds the sample phones once, and builds the site. `prisma/schema.postgres.prisma` is generated, so do not edit it.
+
+Photos you upload in the admin are shrunk in the browser first, because Vercel rejects uploads above 4.5 MB.
+
 ## Still to do before launch
 
 - fill in the Settings page (shop WhatsApp number, address, delivery charges)
